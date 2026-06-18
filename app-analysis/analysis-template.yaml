@@ -8,8 +8,14 @@ spec:
   metrics:
   - name: success-rate
     interval: 30s
+    # Chờ 1 phút sau khi canary lên trước khi bắt đầu đo
+    # để có đủ traffic data trong Prometheus
+    initialDelay: 1m
+    # Nếu không có traffic (NaN/no-data) thì bỏ qua lần đó, không tính failure
     successCondition: result >= 0.90
-    failureLimit: 10
+    # inconclusiveLimit: nếu query trả về NaN/no-data thì tính là inconclusive
+    inconclusiveLimit: 5
+    failureLimit: 3
     provider:
       prometheus:
         address: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
@@ -17,5 +23,5 @@ spec:
           scalar(
             sum(rate(flask_http_request_duration_seconds_count{namespace="demo",app="api",status!~"5.."}[2m]))
             /
-            sum(rate(flask_http_request_duration_seconds_count{namespace="demo",app="api"}[2m]))
+            (sum(rate(flask_http_request_duration_seconds_count{namespace="demo",app="api"}[2m])) > 0)
           )
