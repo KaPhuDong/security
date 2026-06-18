@@ -21,6 +21,11 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+      volumes:
+        # Lab 2.1: Mount Secret từ ESO dưới dạng volume → tự reload, không cần restart
+        - name: db-secret-vol
+          secret:
+            secretName: db-secret       # ESO tạo tự động từ ExternalSecret
       containers:
         - name: api
           image: ghcr.io/kaphudong/w10-api:0.0.6
@@ -37,6 +42,12 @@ spec:
               value: 'v0.0.1'
             - name: ERROR_RATE
               value: '0'
+          volumeMounts:
+            # Mount secret vào /etc/db-secret/password (dạng file, không phải env)
+            # App đọc file này → khi ESO cập nhật Secret, file tự reload mà không restart pod
+            - name: db-secret-vol
+              mountPath: /etc/db-secret
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /healthz

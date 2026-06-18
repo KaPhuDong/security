@@ -5,6 +5,17 @@ metadata:
   name: demo
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+  # Lab 2.2 — QUAN TRỌNG: Label policy.sigstore.dev/include=true
+  # kích hoạt Sigstore Policy Controller enforce image signature trong ns này.
+  # Bỏ comment label bên dưới CHỈ SAU khi:
+  #   1. policy-controller đã cài xong (ArgoCD xanh)
+  #   2. CI đã ký ít nhất 1 image thành công (cosign sign pass)
+  #   3. ClusterImagePolicy đã có public key đúng
+  # Nếu gắn label trước khi image được ký → admission sẽ block app-api ngay lập tức
+  labels: {}
+  # Bỏ comment khi sẵn sàng:
+  # labels:
+  #   policy.sigstore.dev/include: "true"
 ---
 # Namespace: Tao namespace monitoring cho Prometheus/Alertmanager
 apiVersion: v1

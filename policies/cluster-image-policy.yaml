@@ -1,0 +1,24 @@
+# ClusterImagePolicy: Chỉ cho phép image đã ký bằng cosign key
+# Sigstore Policy Controller kiểm tra signature trước khi admit Pod
+# Áp dụng cho ns có label: policy.sigstore.dev/include=true
+#
+# QUAN TRỌNG: Thay publicKey.data bằng nội dung thật của signing/cosign.pub
+# sau khi chạy "cosign generate-key-pair" và CI đã sign image thành công.
+# Gắn label cho namespace CHỈ SAU khi CI đã ký ít nhất 1 image thành công.
+apiVersion: policy.sigstore.dev/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: require-signed-images
+spec:
+  images:
+    # Áp dụng cho tất cả image từ GHCR của owner này
+    - glob: "ghcr.io/kaphudong/**"
+  authorities:
+    - key:
+        # Nội dung public key (base64-encoded PEM)
+        # Thay PLACEHOLDER bằng nội dung thật của signing/cosign.pub
+        # Lấy bằng lệnh: cat signing/cosign.pub | base64 -w0
+        data: |
+          LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KIyBQTEFDRUhPTERFUjogVGhheSBi
+          YW5nIHB1YmxpYyBrZXkgdGhhdCBzYXUga2hpIGNoYXkgY29zaWduIGdlbmVyYXRl
+          LWtleS1wYWlyCi0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo=

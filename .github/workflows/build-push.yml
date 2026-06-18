@@ -1,10 +1,12 @@
-# Build and push Docker image to GitHub Container Registry
+# Build, Scan, Sign và Push Docker image lên GitHub Container Registry
+# Lab 2.2: Tích hợp Trivy (CVE scan) + Cosign (image signing) vào CI pipeline
 name: Build and Push Image
 
 on:
   push:
     branches:
       - main
+      - lab2
     paths:
       - 'src/api/**'
       - '.github/workflows/build-push.yml'
@@ -20,6 +22,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      id-token: write    # Cần cho cosign (OIDC token)
 
     steps:
       - name: Checkout repository
@@ -54,11 +57,35 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
           tags: |
-            type=raw,value=latest
             type=raw,value=${{ steps.semver.outputs.version }}
             type=sha,prefix=v${{ steps.semver.outputs.version }}-
 
-      - name: Build and push Docker image
+      - name: Build Docker image (local, chưa push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./src/api
+          push: false
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.semver.outputs.version }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # ────────────────────────────────────────────────────────────
+      # Lab 2.2a: Trivy scan CVE
+      # exit-code: 1 → CI fail ngay nếu phát hiện CVE HIGH hoặc CRITICAL
+      # ────────────────────────────────────────────────────────────
+      - name: Scan image với Trivy (fail on HIGH/CRITICAL CVE)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.semver.outputs.version }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true            # Bỏ qua CVE chưa có patch (tránh block vô ích)
+          severity: 'HIGH,CRITICAL'       # Chỉ fail khi có HIGH hoặc CRITICAL
+
+      # ────────────────────────────────────────────────────────────
+      # Push image (chỉ sau khi Trivy pass)
+      # ────────────────────────────────────────────────────────────
+      - name: Push Docker image lên GHCR
         uses: docker/build-push-action@v6
         with:
           context: ./src/api
@@ -66,12 +93,44 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Update rollout.yaml with new version
+      # ────────────────────────────────────────────────────────────
+      # Lab 2.2b: Cosign sign image
+      # Private key lưu trong GitHub Secret COSIGN_PRIVATE_KEY
+      # Public key commit vào signing/cosign.pub
+      # Signature được lưu trong GHCR cạnh image (OCI artifact)
+      # ────────────────────────────────────────────────────────────
+      - name: Cài Cosign
+        uses: sigstore/cosign-installer@v3.7.0
+
+      - name: Sign image với private key
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          # Kiểm tra secret đã được set chưa
+          if [ -z "${COSIGN_PRIVATE_KEY}" ]; then
+            echo "❌ Secret COSIGN_PRIVATE_KEY chưa được set!"
+            echo "   Chạy: cosign generate-key-pair"
+            echo "   Sau đó upload cosign.key vào GitHub Secrets → COSIGN_PRIVATE_KEY"
+            exit 1
+          fi
+
+          # Ghi private key vào file tạm trong runner (tự xóa sau job)
+          echo "${COSIGN_PRIVATE_KEY}" > /tmp/cosign.key
+          chmod 600 /tmp/cosign.key
+
+          cosign sign --yes \
+            --key /tmp/cosign.key \
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.semver.outputs.version }}
+
+          echo "✅ Image signed: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.semver.outputs.version }}"
+
+      - name: Update rollout.yaml với version mới
         run: |
           sed -i "s|image: ghcr.io/.*/w10-api:.*|image: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.semver.outputs.version }}|g" app-api/rollout.yaml
           sed -i "s|value: \"v.*\"|value: \"v${{ steps.semver.outputs.version }}\"|g" app-api/rollout.yaml
 
-      - name: Commit and push version update
+      - name: Commit và push version update
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -83,7 +142,7 @@ jobs:
             git push
           fi
 
-      - name: Create git tag
+      - name: Tạo git tag
         run: |
-          git tag v${{ steps.semver.outputs.version }}
-          git push origin v${{ steps.semver.outputs.version }}
+          git tag v${{ steps.semver.outputs.version }} || true
+          git push origin v${{ steps.semver.outputs.version }} || true

@@ -11,7 +11,7 @@ spec:
   source:
     repoURL: https://github.com/KaPhuDong/security.git
     path: rbac
-    targetRevision: main
+    targetRevision: lab2
   destination:
     server: https://kubernetes.default.svc
     namespace: default
