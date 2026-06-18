@@ -5,3 +5,11 @@ metadata:
   name: demo
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+---
+# Namespace: Tao namespace monitoring cho Prometheus/Alertmanager
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
