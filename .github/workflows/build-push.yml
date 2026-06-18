@@ -104,12 +104,25 @@ jobs:
 
       - name: Sign image với private key
         env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
-          # Viết private key ra stdin để tránh lưu vào disk
+          # Kiểm tra secret đã được set chưa
+          if [ -z "${COSIGN_PRIVATE_KEY}" ]; then
+            echo "❌ Secret COSIGN_PRIVATE_KEY chưa được set!"
+            echo "   Chạy: cosign generate-key-pair"
+            echo "   Sau đó upload cosign.key vào GitHub Secrets → COSIGN_PRIVATE_KEY"
+            exit 1
+          fi
+
+          # Ghi private key vào file tạm trong runner (tự xóa sau job)
+          echo "${COSIGN_PRIVATE_KEY}" > /tmp/cosign.key
+          chmod 600 /tmp/cosign.key
+
           cosign sign --yes \
-            --key <(echo "${{ secrets.COSIGN_PRIVATE_KEY }}") \
+            --key /tmp/cosign.key \
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.semver.outputs.version }}
+
           echo "✅ Image signed: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.semver.outputs.version }}"
 
       - name: Update rollout.yaml với version mới
