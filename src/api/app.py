@@ -1,4 +1,4 @@
-# Lab 2 buổi chiều: Flask app với /metrics - chạy với gunicorn
+# Lab 2 buổi chiều: Flask app với /metrics - chạy với gunicorn non-root
 import os
 import random
 from flask import Flask, jsonify
