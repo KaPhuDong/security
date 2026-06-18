@@ -1,0 +1,10 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredOwnerLabel
+metadata:
+  name: deployment-must-have-owner
+spec:
+  enforcementAction: deny
+  match:
+    kinds:
+      - apiGroups: ['apps']
+        kinds: ['Deployment']
