@@ -107,20 +107,8 @@ jobs:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
-          # Kiểm tra secret đã được set chưa
-          if [ -z "${COSIGN_PRIVATE_KEY}" ]; then
-            echo "❌ Secret COSIGN_PRIVATE_KEY chưa được set!"
-            echo "   Chạy: cosign generate-key-pair"
-            echo "   Sau đó upload cosign.key vào GitHub Secrets → COSIGN_PRIVATE_KEY"
-            exit 1
-          fi
-
-          # Ghi private key vào file tạm trong runner (tự xóa sau job)
-          echo "${COSIGN_PRIVATE_KEY}" > /tmp/cosign.key
-          chmod 600 /tmp/cosign.key
-
           cosign sign --yes \
-            --key /tmp/cosign.key \
+            --key env://COSIGN_PRIVATE_KEY \
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.semver.outputs.version }}
 
           echo "✅ Image signed: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.semver.outputs.version }}"
