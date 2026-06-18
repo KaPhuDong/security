@@ -26,6 +26,7 @@ spec:
         - name: db-secret-vol
           secret:
             secretName: db-secret       # ESO tạo tự động từ ExternalSecret
+            optional: true              # Pod vẫn start được khi Secret chưa tồn tại
       containers:
         - name: api
           image: ghcr.io/kaphudong/w10-api:0.0.6
