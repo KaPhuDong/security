@@ -23,7 +23,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: api
-          image: ghcr.io/kaphudong/w10-api:0.0.1
+          image: ghcr.io/KaPhuDong/w10-api:0.0.2
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
