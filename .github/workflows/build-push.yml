@@ -74,7 +74,7 @@ jobs:
       # exit-code: 1 → CI fail ngay nếu phát hiện CVE HIGH hoặc CRITICAL
       # ────────────────────────────────────────────────────────────
       - name: Scan image với Trivy (fail on HIGH/CRITICAL CVE)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.semver.outputs.version }}
           format: 'table'
