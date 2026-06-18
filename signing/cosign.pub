@@ -1,0 +1,12 @@
+-----BEGIN PUBLIC KEY-----
+# PLACEHOLDER: Thay bằng public key thật sau khi chạy: cosign generate-key-pair
+# Lệnh tạo key pair (chạy 1 lần trên máy local):
+#   cosign generate-key-pair
+# → Tạo ra cosign.key (private - đưa vào GitHub Secret COSIGN_PRIVATE_KEY)
+#          cosign.pub  (public - commit file này lên repo)
+#
+# Sau khi có public key thật, thay thế toàn bộ nội dung file này bằng:
+#   -----BEGIN PUBLIC KEY-----
+#   MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...
+#   -----END PUBLIC KEY-----
+-----END PUBLIC KEY-----

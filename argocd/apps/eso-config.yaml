@@ -1,0 +1,27 @@
+# ArgoCD App: Sync thư mục eso/ (SecretStore + ExternalSecret)
+# sync-wave: "1" → SAU khi ESO operator (wave -1) đã cài xong CRD
+# Thứ tự quan trọng: CRD phải tồn tại trước khi apply SecretStore/ExternalSecret
+# nếu không → lỗi "no matches for kind SecretStore"
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eso-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/KaPhuDong/security.git
+    path: eso
+    targetRevision: lab2
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true

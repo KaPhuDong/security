@@ -1,0 +1,27 @@
+# ArgoCD App: Sync thư mục policies/ (ClusterImagePolicy)
+# sync-wave: "1" → SAU khi policy-controller (wave -1) đã cài xong CRD
+# CẢNH BÁO: Gắn label policy.sigstore.dev/include=true cho ns demo
+#            CHỈ SAU khi CI đã ký image thành công → xem app-common/demo-namespace.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/KaPhuDong/security.git
+    path: policies
+    targetRevision: lab2
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cosign-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
